@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  ansible:
+    image: alpine/ansible
+    environment:
+      AWS_LGSM_GAMESERVER_IP: ${AWS_LGSM_GAMESERVER_IP}
+    volumes:
+      - ./inventory:/etc/ansible/inventory
+      - ./playbooks:/etc/ansible/playbooks
+      - ~/.ssh/gameserver:/root/.ssh
+      - ./run_playbook.sh:/usr/local/bin/run_playbook.sh
+    command: /usr/local/bin/run_playbook.sh

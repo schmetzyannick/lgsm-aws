@@ -1,0 +1,36 @@
+- name: Update and upgrade apt packages
+  hosts: gameservers
+  become: yes
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Run apt upgrade
+      ansible.builtin.apt:
+        upgrade: dist
+
+    - name: install docker and docker-compose
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - docker.io
+        - docker-compose
+
+    - name: Add docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Start docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes

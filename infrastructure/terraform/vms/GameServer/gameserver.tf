@@ -33,6 +33,7 @@ resource "aws_instance" "gameserver" {
   instance_type               = var.instance_type
   associate_public_ip_address = true
   key_name = aws_key_pair.ssh_key.key_name
+  vpc_security_group_ids      = [aws_security_group.gameserver_sg.id]
 
   tags = {
     Name = var.vm-name
