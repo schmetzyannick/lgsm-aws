@@ -16,6 +16,12 @@ variable "spot" {
   default     = false
 }
 
+variable "ports" {
+  description = "A list of ports to open on the security group"
+  type        = list(number)
+  default     = [2456, 2457, 2458]
+}
+
 variable "vm-name" {
   description = "The name of the VM"
   type        = string

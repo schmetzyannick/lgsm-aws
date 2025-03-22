@@ -10,7 +10,7 @@
       ansible.builtin.apt:
         upgrade: dist
 
-    - name: install docker and docker-compose
+    - name: Install docker and docker-compose
       ansible.builtin.apt:
         name: "{{ item }}"
         state: present
@@ -34,3 +34,51 @@
         name: docker
         state: started
         enabled: yes
+
+    - name: Create port mappings string
+      set_fact:
+        port_mappings: |
+          {% set ports = (lookup('env', 'GAME_PORTS')).split(',') %}
+          {% for port in ports %}
+                - "{{ port.strip() }}"
+          {% endfor %}
+
+    - name: Gather fact game name
+      set_fact:
+        game_name: "{{ lookup('env', 'GAME_NAME') }}"
+
+    - name: Log port mappings
+      debug:
+        msg: "{{ port_mappings }}"
+
+    - name: Log game name
+      debug:
+        msg: "{{ game_name }}"
+
+    - name: Create directory /srv/docker/linuxgsm
+      ansible.builtin.file:
+        path: /srv/docker/linuxgsm
+        state: directory
+
+    - name: Create server-compose file
+      ansible.builtin.copy:
+        content: |
+          version: '3.8'
+
+          services:
+            gamserver:
+              image: gameservermanagers/linuxgsm-docker:{{ game_name }}
+              container_name: {{ game_name }}
+              volumes:
+                - /srv/docker/linuxgsm/serverfiles:/home/linuxgsm/serverfiles
+                - /srv/docker/linuxgsm/log:/home/linuxgsm/log
+                - /srv/docker/linuxgsm/config:/home/linuxgsm/lgsm/config-lgsm
+                - /srv/docker/linuxgsm/data:/data
+              ports:
+          {{ port_mappings }}
+              restart: always
+        dest: /srv/docker/docker-compose.yml
+
+    - name: Start docker-compose
+      ansible.builtin.command:
+        cmd: docker-compose -f /srv/docker/docker-compose.yml down --remove-orphans && docker-compose -f /srv/docker/docker-compose.yml up -d
