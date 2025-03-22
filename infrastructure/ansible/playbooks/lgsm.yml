@@ -67,18 +67,33 @@
 
           services:
             gamserver:
-              image: gameservermanagers/linuxgsm-docker:{{ game_name }}
+              image: gameservermanagers/gameserver:{{ game_name }}
               container_name: {{ game_name }}
               volumes:
-                - /srv/docker/linuxgsm/serverfiles:/home/linuxgsm/serverfiles
-                - /srv/docker/linuxgsm/log:/home/linuxgsm/log
-                - /srv/docker/linuxgsm/config:/home/linuxgsm/lgsm/config-lgsm
-                - /srv/docker/linuxgsm/data:/data
+                - /srv/docker/linuxgsm/serverfiles:/data/serverfiles
+                - /srv/docker/linuxgsm/log:/data/log
+                - /srv/docker/linuxgsm/config-lgsm:/data/config-lgsm
+                - /srv/docker/linuxgsm/data:/data/data
               ports:
           {{ port_mappings }}
               restart: always
         dest: /srv/docker/docker-compose.yml
 
+
+    - name: Create directory for config files
+      ansible.builtin.file:
+        path: /srv/docker/linuxgsm/config-lgsm/{{ game_name }}server
+        state: directory
+
+    - name: Copy configfile based on game name
+      ansible.builtin.copy:
+        src:  /tmp/host-contents/{{ game_name }}/{{ game_name }}server-copy.cfg
+        dest: /srv/docker/linuxgsm/config-lgsm/{{ game_name }}server/{{ game_name }}server.cfg
+
+    - name: Stop and existing containers
+      ansible.builtin.command:
+        cmd: docker-compose -f /srv/docker/docker-compose.yml down
+
     - name: Start docker-compose
       ansible.builtin.command:
-        cmd: docker-compose -f /srv/docker/docker-compose.yml down --remove-orphans && docker-compose -f /srv/docker/docker-compose.yml up -d
+        cmd: docker-compose -f /srv/docker/docker-compose.yml up -d

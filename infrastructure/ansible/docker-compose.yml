@@ -7,9 +7,13 @@ services:
       AWS_LGSM_GAMESERVER_IP: ${AWS_LGSM_GAMESERVER_IP}
       GAME_PORTS: ${GAME_PORTS:-2456:2456,2457:2457,2458:2458}
       GAME_NAME: ${GAME_NAME:-vh}
+      GAME_PARAM_servername: ${GAME_PARAM_servername:-"My Valheim Server"}
+      GAME_PARAM_serverpassword: ${GAME_PARAM_serverpassword:-"MyValheimServerPassword"}
+      GAME_PARAM_gameworld: ${GAME_PARAM_gameworld:-"MyValheimWorld"}
     volumes:
       - ./inventory:/etc/ansible/inventory
       - ./playbooks:/etc/ansible/playbooks
+      - ./host-contents:/tmp/host-contents
       - ~/.ssh/gameserver:/root/.ssh
       - ./run_playbook.sh:/usr/local/bin/run_playbook.sh
     command: /usr/local/bin/run_playbook.sh
