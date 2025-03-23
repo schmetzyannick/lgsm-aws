@@ -5,7 +5,7 @@ services:
     image: alpine/ansible
     environment:
       AWS_LGSM_GAMESERVER_IP: ${AWS_LGSM_GAMESERVER_IP}
-      GAME_PORTS: ${GAME_PORTS:-2456:2456,2457:2457,2458:2458}
+      GAME_PORTS: ${GAME_PORTS:-2456:2456/udp,2457:2457/udp,2458:2458/udp}
       GAME_NAME: ${GAME_NAME:-vh}
       GAME_PARAM_servername: ${GAME_PARAM_servername:-"My Valheim Server"}
       GAME_PARAM_serverpassword: ${GAME_PARAM_serverpassword:-"MyValheimServerPassword"}
