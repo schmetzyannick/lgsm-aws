@@ -1,0 +1,21 @@
+{
+    "name": "vm-management",
+    "version": "1.0.0",
+    "description": "VM Management",
+    "main": "index.js",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "bundle-prod": "npm run build && node bundle.js"
+    },
+    "author": "Yannick Schmetz",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.147",
+        "@types/node": "^14.14.31",
+        "typescript": "^4.9.5"
+    },
+    "dependencies": {
+        "@aws-sdk/client-ec2": "^3.772.0",
+        "source-map-support": "^0.5.21"
+    }
+}
