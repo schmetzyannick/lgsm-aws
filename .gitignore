@@ -49,3 +49,9 @@ terraform.rc
 # Ignore private key files
 *.pem
 *.key
+
+## Typescript genrated in lambdas##
+lambdas/**/node_modules/
+lambdas/**/dist/
+lambdas/**/bundle/
+lambdas/**/*.zip
