@@ -3,26 +3,20 @@ resource "aws_api_gateway_rest_api" "api" {
   description = "API for VM Management"
 }
 
-resource "aws_api_gateway_resource" "resource" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "vm"
-}
-
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 
   triggers = {
     redeploy = "${timestamp()}"
   }
-  
+
   lifecycle {
     create_before_destroy = true
   }
 
   depends_on = [
-    aws_api_gateway_integration.integration,
-    aws_api_gateway_integration_response.integration_response,
+    aws_api_gateway_integration.all-vms-resource-integration,
+    aws_api_gateway_integration_response.all-vms-resource-integration_response,
     aws_api_gateway_integration.mgmt_integration,                   # Added for /mgmt route
     aws_api_gateway_integration_response.mgmt_integration_response, # Added for /mgmt route
     aws_api_gateway_method_response.mgmt_method_response            # Added for /mgmt route
