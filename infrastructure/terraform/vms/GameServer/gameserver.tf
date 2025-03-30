@@ -31,12 +31,13 @@ resource "aws_key_pair" "ssh_key" {
 resource "aws_instance" "gameserver" {
   ami                         = data.aws_ami.debian-image.id
   instance_type               = var.instance_type
-  associate_public_ip_address = true
-  key_name = aws_key_pair.ssh_key.key_name
+  associate_public_ip_address = false
+  key_name                    = aws_key_pair.ssh_key.key_name
   vpc_security_group_ids      = [aws_security_group.gameserver_sg.id]
 
   tags = {
-    Name = var.vm-name
+    Name        = var.vm-name
+    VMManagment = "true"
   }
 
   dynamic "instance_market_options" {
@@ -50,6 +51,10 @@ resource "aws_instance" "gameserver" {
   root_block_device {
     volume_size = 20
     volume_type = "gp2"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 

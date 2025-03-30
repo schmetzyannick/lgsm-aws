@@ -9,43 +9,15 @@ resource "aws_api_gateway_resource" "resource" {
   path_part   = "vm"
 }
 
-resource "aws_api_gateway_method" "method" {
-  rest_api_id      = aws_api_gateway_rest_api.api.id
-  resource_id      = aws_api_gateway_resource.resource.id
-  http_method      = "GET"
-  authorization    = "NONE"
-  api_key_required = true
-}
-
-resource "aws_api_gateway_method_response" "method_response" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.resource.id
-  http_method = aws_api_gateway_method.method.http_method
-  status_code = "200"
-}
-
-resource "aws_api_gateway_integration" "integration" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.resource.id
-  http_method             = aws_api_gateway_method.method.http_method
-  type                    = "AWS_PROXY"
-  integration_http_method = "POST"
-  uri                     = aws_lambda_function.vm_management.invoke_arn
-}
-
-resource "aws_api_gateway_integration_response" "integration_response" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.resource.id
-  http_method = aws_api_gateway_method.method.http_method
-  status_code = "200"
-}
-
 resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = "prod"
 
   triggers = {
-    redeploy = timestamp()
+    redeploy = "${timestamp()}"
+  }
+  
+  lifecycle {
+    create_before_destroy = true
   }
 
   depends_on = [
@@ -58,8 +30,8 @@ resource "aws_api_gateway_deployment" "deployment" {
 }
 
 resource "aws_api_gateway_stage" "prod_stage" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = "prod"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  stage_name    = "prod"
   deployment_id = aws_api_gateway_deployment.deployment.id
 
   variables = {
@@ -76,13 +48,13 @@ resource "aws_api_gateway_usage_plan" "usage_plan" {
   }
 
   throttle_settings {
-    rate_limit = 10    # Maximum number of requests per second
-    burst_limit = 20   # Maximum number of requests in a burst
+    rate_limit  = 10 # Maximum number of requests per second
+    burst_limit = 20 # Maximum number of requests in a burst
   }
 
   quota_settings {
-    limit  = 5000      # Maximum number of requests allowed
-    period = "MONTH"    # Time period for the quota (e.g., DAY, WEEK, MONTH)
+    limit  = 5000    # Maximum number of requests allowed
+    period = "MONTH" # Time period for the quota (e.g., DAY, WEEK, MONTH)
   }
 }
 
@@ -103,6 +75,61 @@ resource "aws_lambda_permission" "api_gateway" {
   function_name = aws_lambda_function.vm_management.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
+data "aws_route53_zone" "hosted-zone" {
+  name = var.zone-name
+}
+
+resource "aws_api_gateway_domain_name" "custom_domain" {
+  domain_name              =  "${local.api-url-name}.${data.aws_route53_zone.hosted-zone.name}"
+  regional_certificate_arn = aws_acm_certificate.api_gateway_cert.arn
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+}
+
+resource "aws_acm_certificate" "api_gateway_cert" {
+  domain_name       = "${local.api-url-name}.${data.aws_route53_zone.hosted-zone.name}"
+  validation_method = "DNS"
+
+  tags = {
+    Name = "API Gateway Certificate"
+  }
+}
+
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.api_gateway_cert.domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  }
+
+  zone_id = data.aws_route53_zone.hosted-zone.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.value]
+  ttl     = 60
+}
+
+resource "aws_api_gateway_base_path_mapping" "custom_domain_mapping" {
+  api_id      = aws_api_gateway_rest_api.api.id
+  domain_name = aws_api_gateway_domain_name.custom_domain.domain_name
+  stage_name  = aws_api_gateway_stage.prod_stage.stage_name
+}
+
+resource "aws_route53_record" "api_gateway_dns" {
+  zone_id = data.aws_route53_zone.hosted-zone.zone_id
+  name    = local.api-url-name
+  type    = "A"
+
+  alias {
+    name                   = aws_api_gateway_domain_name.custom_domain.regional_domain_name
+    zone_id                = aws_api_gateway_domain_name.custom_domain.regional_zone_id
+    evaluate_target_health = false
+  }
 }
 
 output "api_endpoint" {

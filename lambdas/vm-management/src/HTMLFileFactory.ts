@@ -122,33 +122,31 @@ export class HTMLFileFactory {
     IInstanceInformation[]
   > {
     // Get all instances
-    const command = new DescribeInstancesCommand({});
+    const command = new DescribeInstancesCommand({
+      Filters: [
+        {
+          Name: "tag:VMManagment", // Filter for the "VMManagment" tag
+          Values: ["true"], // Only instances where the tag value is "true"
+        },
+      ],
+    });
     const response: DescribeInstancesCommandOutput = await this.client.send(
       command
     );
-    // Filter instances that have the tag "VMManagment" set to "true"
-    return (
-      response.Reservations?.flatMap(
-        (reservation) =>
-          reservation.Instances?.forEach((instance) => {
-            // check if tag "VMManagment" is set to "true"
-            const vmManagementTag = instance.Tags?.find(
-              (tag) => tag.Key === "VMManagment" && tag.Value === "true"
-            );
-            if (vmManagementTag) {
-              const nameTag = instance.Tags?.find((tag) => tag.Key === "Name");
-              const publicIP = instance.PublicIpAddress;
-              const status = instance.State?.Name;
-              return {
-                id: instance.InstanceId!,
-                name: nameTag?.Value!,
-                publicIP: publicIP!,
-                status: status as "running" | "stopped" | "terminated",
-              };
-            } else {
-            }
-          }) ?? []
-      ) ?? []
-    );
+    const instances: IInstanceInformation[] = [];
+    response.Reservations?.forEach((reservation) => {
+      reservation.Instances?.forEach((instance) => {
+        const nameTag = instance.Tags?.find((tag) => tag.Key === "Name");
+        const publicIP = instance.PublicIpAddress;
+        const status = instance.State?.Name;
+        instances.push({
+          id: instance.InstanceId!,
+          name: nameTag?.Value!,
+          publicIP: publicIP!,
+          status: status as "running" | "stopped" | "terminated",
+        });
+      });
+    });
+    return instances;
   }
 }

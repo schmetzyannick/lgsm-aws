@@ -9,3 +9,12 @@ variable "image_tag" {
   description = "value of the image tag"
   type = string
 }
+
+variable "zone-name" {
+  description = "The name of the Route53 zone."
+  type        = string  
+}
+
+locals {
+  api-url-name = "lsgm"
+}
