@@ -15,6 +15,8 @@ resource "aws_api_gateway_deployment" "deployment" {
   }
 
   depends_on = [
+    aws_api_gateway_integration.start_vm_integration,
+    aws_api_gateway_integration.stop_vm_integration,
     aws_api_gateway_integration.all-vms-resource-integration,
     aws_api_gateway_integration_response.all-vms-resource-integration_response,
     aws_api_gateway_integration.mgmt_integration,                   # Added for /mgmt route

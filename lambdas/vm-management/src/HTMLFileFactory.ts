@@ -1,22 +1,17 @@
-import {
-  EC2Client,
-  DescribeInstancesCommand,
-  DescribeInstancesCommandOutput,
-} from "@aws-sdk/client-ec2";
 import { IInstanceInformation } from "./IInstanceInformation";
+import { EC2Utility } from "./EC2Utility";
 
 /**
  * Generates HTML files based on the currents state of the VMs.
  */
 export class HTMLFileFactory {
-  private static readonly client = new EC2Client({ region: "eu-west-1" });
 
   /**
    * Generates webpage based on current state of the VMs.
    * @returns HTML content that displays all EC2 instances that have the tag "VMManagment" set to "true".
    */
   public static async generateHTML(): Promise<string> {
-    const instances = await this.getAllVMsThatShouldBeDisplayed();
+    const instances = await EC2Utility.getAllVMsThatShouldBeDisplayed();
     const htmlContent = `${this.getHTMLPartBeforeInstances()}${this.generateHTMLForInstances(
       instances
     )}${this.getHTMLPartAfterInstances()}`;
@@ -25,16 +20,68 @@ export class HTMLFileFactory {
 
   private static getHTMLPartAfterInstances(): string {
     return `
-        
     <script>
-        function startInstance(instanceName) {
-            alert('Starting ' + instanceName);
-            // Add your start instance logic here
+        function getUrlAndApiKey() {
+            // Retrieve the API key from the parent document
+            const apiKey = window.parent.document.getElementById("apiKey").value;
+            if (!apiKey) {
+                alert('API key not found!');
+                return;
+            }
+
+            let apiUrl = window.parent.location.origin;
+            if(window.location.pathname.startsWith("/prod")){
+              apiUrl += "/prod";
+            };
+            apiUrl += "/startVM";
+            return { apiUrl, apiKey };
+        }
+    </script>    
+    <script>       
+        function startInstance(instanceId) {
+            const { apiUrl, apiKey } = getUrlAndApiKey();
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'x-api-key': apiKey,
+                },
+                body: JSON.stringify({ instanceId: instanceId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Starting ' + instanceId);
+                    return;
+                } else {
+                    alert('Failed to start instance ' + instanceId);
+                }
+            })
+            .catch(error => {
+                alert('Error starting instance: ' + error.message);
+            });
         }
 
-        function stopInstance(instanceName) {
-            alert('Stopping ' + instanceName);
-            // Add your stop instance logic here
+        function stopInstance(instanceId) {
+            const { apiUrl, apiKey } = getUrlAndApiKey();
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'x-api-key': apiKey,
+                },
+                body: JSON.stringify({ instanceId: instanceId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Stopping ' + instanceId);
+                    return;
+                } else {
+                    alert('Failed to stop instance ' + instanceId);
+                }
+            })
+            .catch(error => {
+                alert('Error stopping instance: ' + error.message);
+            });
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -113,40 +160,5 @@ export class HTMLFileFactory {
         `
       )
       .join("");
-  }
-
-  /**
-   * Get name and id of all EC2 instances that have the tag "VMManagment" set to "true".
-   */
-  private static async getAllVMsThatShouldBeDisplayed(): Promise<
-    IInstanceInformation[]
-  > {
-    // Get all instances
-    const command = new DescribeInstancesCommand({
-      Filters: [
-        {
-          Name: "tag:VMManagment", // Filter for the "VMManagment" tag
-          Values: ["true"], // Only instances where the tag value is "true"
-        },
-      ],
-    });
-    const response: DescribeInstancesCommandOutput = await this.client.send(
-      command
-    );
-    const instances: IInstanceInformation[] = [];
-    response.Reservations?.forEach((reservation) => {
-      reservation.Instances?.forEach((instance) => {
-        const nameTag = instance.Tags?.find((tag) => tag.Key === "Name");
-        const publicIP = instance.PublicIpAddress;
-        const status = instance.State?.Name;
-        instances.push({
-          id: instance.InstanceId!,
-          name: nameTag?.Value!,
-          publicIP: publicIP!,
-          status: status as "running" | "stopped" | "terminated",
-        });
-      });
-    });
-    return instances;
   }
 }

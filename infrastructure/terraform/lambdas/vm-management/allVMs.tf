@@ -26,14 +26,6 @@ resource "aws_api_gateway_integration" "all-vms-resource-integration" {
   type                    = "AWS_PROXY"
   integration_http_method = "POST"
   uri                     = aws_lambda_function.vm_management.invoke_arn
-
-  request_templates = {
-    "application/json" = jsonencode({
-      body       = jsonencode({
-        action = "getHTML"
-      })
-    })
-  }
 }
 
 resource "aws_api_gateway_integration_response" "all-vms-resource-integration_response" {

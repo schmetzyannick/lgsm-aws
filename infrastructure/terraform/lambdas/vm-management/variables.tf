@@ -16,5 +16,5 @@ variable "zone-name" {
 }
 
 locals {
-  api-url-name = "lsgm"
+  api-url-name = "lgsm"
 }

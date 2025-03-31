@@ -17,7 +17,11 @@ export class EventParser {
           event.resource === "/stopVM" ||
           event.resource === "/allVMs"
         ) {
-          event.resource = event.resource.replace("/", "") as IIncomingEvent["resource"];
+          event.resource = event.resource.replace(
+            "/",
+            ""
+          ) as IIncomingEvent["resource"];
+          event = EventParser.parseObtionalBody(event);
           return event as IIncomingEvent;
         } else {
           throw new Error("Invalid resource in event event.resource.");
@@ -28,5 +32,18 @@ export class EventParser {
     } else {
       throw new Error("Event is not an object.");
     }
+  }
+
+  private static parseObtionalBody(event: unknown): IIncomingEvent {
+    if (typeof event === "object" && event !== null) {
+      if ("body" in event && typeof event.body === "string") {
+        const body = JSON.parse(event.body);
+        if (typeof body === "object" && body !== null) {
+          event.body = body as { instanceId?: string };
+          return event as IIncomingEvent;
+        }
+      }
+    }
+    return event as IIncomingEvent; 
   }
 }
