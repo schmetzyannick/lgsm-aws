@@ -21,7 +21,7 @@ export class EventParser {
             "/",
             ""
           ) as IIncomingEvent["resource"];
-          event = EventParser.parseObtionalBody(event);
+          event = EventParser.parseOptionalBody(event);
           return event as IIncomingEvent;
         } else {
           throw new Error("Invalid resource in event event.resource.");
@@ -34,7 +34,7 @@ export class EventParser {
     }
   }
 
-  private static parseObtionalBody(event: unknown): IIncomingEvent {
+  private static parseOptionalBody(event: unknown): IIncomingEvent {
     if (typeof event === "object" && event !== null) {
       if ("body" in event && typeof event.body === "string") {
         const body = JSON.parse(event.body);

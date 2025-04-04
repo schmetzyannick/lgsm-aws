@@ -30,7 +30,7 @@ export class EC2Utility {
   }
   public static async stopVM(instanceId: string): Promise<void> {
     if (await EC2Utility.instanceHasTag(instanceId)) {
-      //start the instance
+      //stop the instance
       const command = new StopInstancesCommand({
         InstanceIds: [instanceId],
       });
