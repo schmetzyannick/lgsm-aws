@@ -21,7 +21,7 @@ export class HTMLFileFactory {
   private static getHTMLPartAfterInstances(): string {
     return `
     <script>
-        function getUrlAndApiKey() {
+        function getUrlAndApiKey(startOrStop) {
             // Retrieve the API key from the parent document
             const apiKey = window.parent.document.getElementById("apiKey").value;
             if (!apiKey) {
@@ -33,13 +33,17 @@ export class HTMLFileFactory {
             if(window.location.pathname.startsWith("/prod")){
               apiUrl += "/prod";
             };
-            apiUrl += "/startVM";
+            if(startOrStop === "start"){
+                apiUrl += "/startVM";
+            }else{
+                apiUrl += "/stopVM";
+            }
             return { apiUrl, apiKey };
         }
     </script>    
     <script>       
         function startInstance(instanceId) {
-            const { apiUrl, apiKey } = getUrlAndApiKey();
+            const { apiUrl, apiKey } = getUrlAndApiKey("start");
 
             fetch(apiUrl, {
                 method: 'POST',
@@ -62,7 +66,7 @@ export class HTMLFileFactory {
         }
 
         function stopInstance(instanceId) {
-            const { apiUrl, apiKey } = getUrlAndApiKey();
+            const { apiUrl, apiKey } = getUrlAndApiKey("stop");
 
             fetch(apiUrl, {
                 method: 'POST',
