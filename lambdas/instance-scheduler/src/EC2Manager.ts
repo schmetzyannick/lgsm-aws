@@ -15,9 +15,10 @@ export class EC2Manager {
   /**
    * Stops all vms that have the tag "VMManagment" set to "true".
    */
-  public static async stopVMs(): Promise<void> {
+  public static async stopVMs(): Promise<{id: string}[]> {
     const instances = await this.getAllVMsThatShouldBeStopped();
     const errors: string[] = [];
+    const stopInstances: {id: string}[] = [];
     for (const instance of instances) {
       const command = new StopInstancesCommand({
         InstanceIds: [instance.id],
@@ -26,10 +27,14 @@ export class EC2Manager {
       if (respones.StoppingInstances?.length === 0) {
         errors.push(`Instance ${instance.id} was not stopped.`);
       }
+      stopInstances.push({
+        id: instance.id,
+      });
     }
     if (errors.length > 0) {
       throw new Error(`Some instances were not stopped: ${errors.join(", ")}`);
     }
+    return stopInstances;
   }
 
   private static async getAllVMsThatShouldBeStopped(): Promise<
